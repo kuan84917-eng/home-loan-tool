@@ -1,0 +1,279 @@
+
+<style>
+h2.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.tool-title{font-size:20px;font-weight:500;color:var(--color-text-primary);margin:0 0 1rem;padding-top:.25rem}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.sec-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin:0 0 .75rem;letter-spacing:.04em}
+.section-head{font-size:12px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.06em;margin:1rem 0 .5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+label{font-size:13px;color:var(--color-text-secondary)}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.75rem 1rem}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin:0 0 4px}
+.metric-value{font-size:17px;font-weight:500;color:var(--color-text-primary);margin:0}
+.metric-sub{font-size:11px;color:var(--color-text-secondary);margin:2px 0 0}
+.metric-highlight{border:0.5px solid var(--color-border-secondary)}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:var(--border-radius-md);font-weight:500;margin-left:4px;vertical-align:middle}
+.tag-ok{background:var(--color-background-success);color:var(--color-text-success)}
+.tag-warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+.tag-bad{background:var(--color-background-danger);color:var(--color-text-danger)}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:.75rem 0}
+.risk-bar-wrap{background:var(--color-background-secondary);border-radius:20px;height:10px;overflow:hidden;margin:6px 0}
+.risk-bar{height:100%;border-radius:20px;transition:width .4s,background .4s}
+.note-list{list-style:none;padding:0;margin:0;font-size:13px;line-height:2}
+.note-list li{border-bottom:0.5px solid var(--color-border-tertiary);padding:2px 0}
+.note-list li:last-child{border-bottom:none}
+.note-list li::before{content:"▸ ";color:var(--color-text-tertiary)}
+.legend-row{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary);margin-bottom:8px}
+.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+select{width:100%;box-sizing:border-box}
+button.calc-btn{width:100%;padding:10px;font-size:15px;font-weight:500;cursor:pointer;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary)}
+button.calc-btn:hover{background:var(--color-background-tertiary)}
+</style>
+
+<h2 class="sr-only">房貸試算及風險評估工具，填入貸款條件後點擊試算，顯示試算結果、本金利息拆解圖、分析筆記與風險雷達。</h2>
+
+<p class="tool-title"><i class="ti ti-home-dollar" aria-hidden="true"></i> 房貸試算及風險評估工具</p>
+
+<div class="card">
+  <p class="sec-title"><i class="ti ti-building" aria-hidden="true"></i> 基本條件</p>
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="field"><label>房屋總價（萬元）</label><input type="number" id="price" value="1500" min="100" step="50"></div>
+    <div class="field"><label>頭期款比例（%）</label><input type="number" id="down" value="20" min="0" max="100" step="1"></div>
+    <div class="field"><label>貸款年限（年）</label><input type="number" id="years" value="30" min="1" max="40" step="1"></div>
+    <div class="field"><label>房貸年利率（%）</label><input type="number" id="rate" value="2.2" min="0.1" max="10" step="0.1"></div>
+    <div class="field"><label>寬限期（年，只繳息）</label><input type="number" id="grace" value="2" min="0" max="10" step="1"></div>
+    <div class="field"><label>還款方式</label>
+      <select id="repayType">
+        <option value="equal_payment">本息攤還（等額還款）</option>
+        <option value="equal_principal">本金攤還（遞減還款）</option>
+      </select>
+    </div>
+    <div class="field" style="grid-column:1/-1"><label>月收入（元）</label><input type="number" id="income" value="60000" min="1000" step="1000"></div>
+  </div>
+  <p class="section-head"><i class="ti ti-shield-half" aria-hidden="true"></i> 風險評估</p>
+  <div class="field" style="margin-bottom:12px"><label>每月可接受房貸比例（%）</label><input type="number" id="threshold" value="33" min="1" max="100" step="1"></div>
+  <button class="calc-btn" onclick="calc()"><i class="ti ti-calculator" aria-hidden="true"></i> 開始試算</button>
+</div>
+
+<div id="result-section" style="display:none">
+
+  <div class="card">
+    <p class="sec-title"><i class="ti ti-report-analytics" aria-hidden="true"></i> 試算結果</p>
+    <div class="grid3" id="metrics-row1" style="margin-bottom:10px"></div>
+    <div class="grid3" id="metrics-row2"></div>
+  </div>
+
+  <div class="card">
+    <p class="sec-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> 本金利息拆解圖（逐年）</p>
+    <div class="legend-row">
+      <span><span class="legend-dot" style="background:#1D9E75"></span>還本金</span>
+      <span><span class="legend-dot" style="background:#FAC775"></span>付利息</span>
+    </div>
+    <div style="position:relative;width:100%;height:260px">
+      <canvas id="chart" role="img" aria-label="逐年本金與利息拆解堆疊長條圖，游標懸停顯示本金、利息及月付金"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="sec-title"><i class="ti ti-notes" aria-hidden="true"></i> 分析筆記</p>
+    <ul class="note-list" id="notes"></ul>
+  </div>
+
+  <div class="card">
+    <p class="sec-title"><i class="ti ti-radar" aria-hidden="true"></i> 負擔比風險雷達</p>
+    <div id="risk-panel"></div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let chartInst=null;
+function fmt(n){return Math.round(n).toLocaleString('zh-TW')}
+function fmtW(n){
+  if(Math.abs(n)>=100000000)return (n/100000000).toFixed(2)+'億';
+  return (n/10000).toFixed(1)+'萬';
+}
+function riskTag(r){
+  if(r<=30)return '<span class="tag tag-ok">健康</span>';
+  if(r<=40)return '<span class="tag tag-warn">偏高</span>';
+  return '<span class="tag tag-bad">警戒</span>';
+}
+function metricCard(label,value,sub,highlight){
+  return `<div class="metric${highlight?' metric-highlight':''}"><p class="metric-label">${label}</p><p class="metric-value">${value}</p>${sub?`<p class="metric-sub">${sub}</p>`:'</p>'}</div>`;
+}
+function calcEqualPayment(loan,r,n){
+  if(r===0)return loan/n;
+  return loan*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+}
+function buildYearlyData(loan,r,grace,years,repayType){
+  const labels=[],principals=[],interests=[],monthlyPayments=[];
+  const nonGraceMonths=(years-grace)*12;
+  let bal=loan;
+  const mainPayEP=repayType==='equal_payment'?calcEqualPayment(loan,r,nonGraceMonths):null;
+  const fixedPrin=repayType==='equal_principal'?loan/nonGraceMonths:null;
+
+  for(let yr=1;yr<=years;yr++){
+    let yP=0,yI=0,firstMonthPay=null;
+    for(let m=0;m<12;m++){
+      const int=bal*r;
+      if(yr<=grace){
+        yI+=int;
+        if(m===0)firstMonthPay=int;
+      } else {
+        if(repayType==='equal_payment'){
+          const prin=Math.min(mainPayEP-int,bal);
+          yP+=prin>0?prin:0;
+          yI+=int;
+          bal-=(prin>0?prin:0);
+          if(m===0)firstMonthPay=mainPayEP;
+        } else {
+          const prin=Math.min(fixedPrin,bal);
+          yP+=prin;
+          yI+=int;
+          bal-=prin;
+          if(m===0)firstMonthPay=prin+int;
+        }
+      }
+    }
+    labels.push(yr+'年');
+    principals.push(Math.round(yP));
+    interests.push(Math.round(yI));
+    monthlyPayments.push(Math.round(firstMonthPay||0));
+  }
+  return{labels,principals,interests,monthlyPayments};
+}
+
+function calc(){
+  const price=parseFloat(document.getElementById('price').value)||1500;
+  const downPct=parseFloat(document.getElementById('down').value)||20;
+  const years=parseInt(document.getElementById('years').value)||30;
+  const annualRate=parseFloat(document.getElementById('rate').value)||2.2;
+  const grace=parseInt(document.getElementById('grace').value)||0;
+  const repayType=document.getElementById('repayType').value;
+  const income=parseFloat(document.getElementById('income').value)||60000;
+  const threshold=parseFloat(document.getElementById('threshold').value)||33;
+
+  const loanWan=price*(1-downPct/100);
+  const downWan=price*downPct/100;
+  const loan=loanWan*10000;
+  const downAmt=downWan*10000;
+  const r=annualRate/100/12;
+  const n=(years-grace)*12;
+
+  const gracePayment=grace>0?loan*r:0;
+
+  let firstMonthMain,totalInterest;
+  if(repayType==='equal_payment'){
+    firstMonthMain=calcEqualPayment(loan,r,n);
+    totalInterest=(gracePayment*grace*12)+(firstMonthMain*n-loan);
+  } else {
+    const mp=loan/n;
+    firstMonthMain=mp+(loan*r);
+    let bal=loan,tot=0;
+    for(let i=0;i<grace*12;i++)tot+=loan*r;
+    for(let i=0;i<n;i++){tot+=bal*r;bal-=mp;}
+    totalInterest=tot;
+  }
+
+  const totalPay=loan+totalInterest;
+  const totalCost=totalPay+downAmt;
+  const budgetLimit=income*(threshold/100);
+  const mainRatio=firstMonthMain/income*100;
+  const graceRatio=grace>0?(gracePayment/income*100):null;
+  const stressRate=annualRate*1.5;
+  const stressR=stressRate/100/12;
+  const stressPayment=calcEqualPayment(loan,stressR,n);
+  const stressRatio=stressPayment/income*100;
+
+  document.getElementById('result-section').style.display='block';
+
+  document.getElementById('metrics-row1').innerHTML=
+    metricCard('① 頭期款',fmtW(downAmt),`${downPct}% / ${fmt(downAmt)} 元`)+
+    metricCard('② 貸款額',fmtW(loan),`${fmt(loan)} 元`)+
+    metricCard('③ 寬限期月還款',grace>0?`${fmt(gracePayment)}元`:'—',grace>0?`只繳息 ${grace} 年`:'無寬限期');
+
+  document.getElementById('metrics-row2').innerHTML=
+    metricCard('④ 一般每月還款',`${fmt(firstMonthMain)}元`,`佔月收入 ${mainRatio.toFixed(1)}%${riskTag(mainRatio)}`,true)+
+    metricCard('⑤ 總利息',fmtW(totalInterest),`年利率 ${annualRate}%`)+
+    metricCard('⑥ 購屋總成本',fmtW(totalCost),`貸款＋頭期款＋利息`,true);
+
+  const {labels,principals,interests,monthlyPayments}=buildYearlyData(loan,r,grace,years,repayType);
+
+  if(chartInst)chartInst.destroy();
+  chartInst=new Chart(document.getElementById('chart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'還本金',data:principals,backgroundColor:'#1D9E75',stack:'s'},
+        {label:'付利息',data:interests,backgroundColor:'#FAC775',stack:'s'},
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title(items){return items[0].label},
+            beforeBody(items){
+              const idx=items[0].dataIndex;
+              return `月付金：${fmt(monthlyPayments[idx])} 元`;
+            },
+            label(item){
+              const val=item.raw;
+              return ` ${item.dataset.label}：${fmtW(val)}（${fmt(val)} 元）`;
+            },
+            afterBody(items){
+              const idx=items[0].dataIndex;
+              const total=principals[idx]+interests[idx];
+              return `年度合計：${fmtW(total)}`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{stacked:true,ticks:{font:{size:11},autoSkip:true,maxTicksLimit:15,maxRotation:45}},
+        y:{stacked:true,ticks:{callback:v=>fmtW(v),font:{size:11}}}
+      }
+    }
+  });
+
+  const repayLabel=repayType==='equal_payment'?'本息攤還':'本金攤還';
+  const interestRatio=(totalInterest/loan*100).toFixed(1);
+  document.getElementById('notes').innerHTML=`
+    <li>還款方式：<strong>${repayLabel}</strong>，年利率 ${annualRate}%，貸款 ${years} 年。</li>
+    <li>頭期款 <strong>${fmtW(downAmt)}</strong>（${downPct}%），貸款額 <strong>${fmtW(loan)}</strong>。</li>
+    ${grace>0?`<li>寬限期 ${grace} 年，每月僅繳利息 ${fmt(gracePayment)} 元；期滿後月付跳升至 ${fmt(firstMonthMain)} 元，須提前備妥資金。</li>`:''}
+    <li>一般每月還款 <strong>${fmt(firstMonthMain)} 元</strong>，佔月收入 ${mainRatio.toFixed(1)}%，可接受上限（${threshold}%）= ${fmt(budgetLimit)} 元 → ${firstMonthMain<=budgetLimit?'✓ 在可接受範圍內':'✗ 超出設定上限，建議降低貸款額或延長年限'}。</li>
+    <li>總利息 <strong>${fmtW(totalInterest)}</strong>，為貸款本金的 ${interestRatio}%。</li>
+    <li>購屋總成本（頭期款＋貸款＋利息）= <strong>${fmtW(totalCost)}</strong>，為房價的 ${(totalCost/(price*10000)*100).toFixed(1)}%。</li>
+    <li>壓力測試（利率×1.5 → ${stressRate.toFixed(2)}%）：月付約 ${fmt(stressPayment)} 元（收入佔比 ${stressRatio.toFixed(1)}%）。</li>
+    ${repayType==='equal_principal'?'<li>本金攤還首月還款最高，此後逐月遞減；總利息低於本息攤還方式。</li>':''}
+  `;
+
+  const scenarios=[];
+  if(grace>0&&graceRatio!==null)scenarios.push({label:'寬限期月付比',val:graceRatio,monthly:gracePayment});
+  scenarios.push({label:'一般月付比（本息期）',val:mainRatio,monthly:firstMonthMain});
+  scenarios.push({label:'壓力測試月付比（×1.5利率）',val:stressRatio,monthly:stressPayment});
+
+  document.getElementById('risk-panel').innerHTML=scenarios.map(s=>{
+    const pct=Math.min(s.val,100);
+    const barColor=s.val<=30?'#1D9E75':s.val<=40?'#EF9F27':'#E24B4A';
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--color-text-secondary)">
+        <span>${s.label}</span>
+        <span style="font-weight:500;color:var(--color-text-primary)">${s.val.toFixed(1)}%${riskTag(s.val)}</span>
+      </div>
+      <div class="risk-bar-wrap"><div class="risk-bar" style="width:${pct}%;background:${barColor}"></div></div>
+      <div style="font-size:11px;color:var(--color-text-tertiary)">月付 ${fmt(s.monthly)} 元 ／ 上限 ${fmt(income*threshold/100)} 元</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('result-section').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+</script>
